@@ -391,8 +391,22 @@ elif nav_option == "Alert Center":
     display_df = alerts_df[cols_to_show].copy()
     display_df["date"] = display_df["date"].dt.strftime("%Y-%m-%d")
     
+    def style_risk_score(val):
+        try:
+            score = float(val)
+            alpha = min(max(score, 0.0), 1.0) * 0.7
+            return f"background-color: rgba(239, 68, 68, {alpha:.2f}); color: #f8fafc"
+        except (ValueError, TypeError):
+            return ""
+            
+    styled_df = display_df.style
+    if hasattr(styled_df, "map"):
+        styled_df = styled_df.map(style_risk_score, subset=["final_risk_score"])
+    else:
+        styled_df = styled_df.applymap(style_risk_score, subset=["final_risk_score"])
+        
     st.dataframe(
-        display_df.style.background_gradient(subset=["final_risk_score"], cmap="OrRd"),
+        styled_df,
         use_container_width=True,
         height=500
     )
