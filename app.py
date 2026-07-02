@@ -19,94 +19,94 @@ st.set_page_config(
 )
 
 # Premium Dark Mode Theme Injection
-    st.markdown(
-        """
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;600;800&display=swap');
-        
-        html, body, [class*="css"] {
-            font-family: 'Inter', sans-serif;
-        }
-        
-        .main-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2.6rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.2rem;
-        }
-        
-        .sub-title {
-            font-size: 1.1rem;
-            color: #94a3b8;
-            margin-bottom: 2rem;
-        }
-        
-        .kpi-card {
-            background: rgba(30, 41, 59, 0.45);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-        
-        .kpi-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(99, 102, 241, 0.4);
-        }
-        
-        .kpi-value {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2.4rem;
-            font-weight: 700;
-            color: #f8fafc;
-            margin: 5px 0;
-        }
-        
-        .kpi-label {
-            font-size: 0.85rem;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .alert-high {
-            border-left: 5px solid #ef4444 !important;
-        }
-        .alert-monitor {
-            border-left: 5px solid #f59e0b !important;
-        }
-        .alert-normal {
-            border-left: 5px solid #10b981 !important;
-        }
-        
-        /* Streamlit Customizations */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 24px;
-        }
-        
-        .stTabs [data-baseweb="tab"] {
-            height: 50px;
-            white-space: pre-wrap;
-            background-color: transparent;
-            border-radius: 4px 4px 0 0;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        
-        .stTabs [aria-selected="true"] {
-            color: #6366f1 !important;
-            border-bottom-color: #6366f1 !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;600;800&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .main-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2.6rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.2rem;
+    }
+    
+    .sub-title {
+        font-size: 1.1rem;
+        color: #94a3b8;
+        margin-bottom: 2rem;
+    }
+    
+    .kpi-card {
+        background: rgba(30, 41, 59, 0.45);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(99, 102, 241, 0.4);
+    }
+    
+    .kpi-value {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2.4rem;
+        font-weight: 700;
+        color: #f8fafc;
+        margin: 5px 0;
+    }
+    
+    .kpi-label {
+        font-size: 0.85rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .alert-high {
+        border-left: 5px solid #ef4444 !important;
+    }
+    .alert-monitor {
+        border-left: 5px solid #f59e0b !important;
+    }
+    .alert-normal {
+        border-left: 5px solid #10b981 !important;
+    }
+    
+    /* Streamlit Customizations */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 24px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: transparent;
+        border-radius: 4px 4px 0 0;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        color: #6366f1 !important;
+        border-bottom-color: #6366f1 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 import requests
 
