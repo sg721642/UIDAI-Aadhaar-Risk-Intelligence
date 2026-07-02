@@ -50,6 +50,12 @@ This system solves this challenge by implementing an automated **unsupervised an
 ### 2. Alert Center
 ![Alert Center](docs/screenshots/alert_center.png)
 
+### 3. Pincode Deep-Dive
+![Pincode Deep-Dive](docs/screenshots/pincode_deep_dive.png)
+
+### 4. Risk Weight Configuration
+![Risk Weight Configuration](docs/screenshots/risk_weight_config.png)
+
 ---
 
 ## 🏗️ System Architecture
