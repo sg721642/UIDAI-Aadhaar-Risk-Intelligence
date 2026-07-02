@@ -127,9 +127,24 @@ def generate_mock_data(scores_path, summary_path):
         "explanation": explanations,
         "semantic_context": semantic_contexts
     })
-    
+
     df = df.sort_values("date").reset_index(drop=True)
+
+    # Derived columns — must match the real ML pipeline output schema exactly
+    df["biometric_total"] = df["bio_age_5_17"] + df["bio_age_17_"]
+    df["demographic_total"] = df["demo_age_5_17"] + df["demo_age_17_"]
+    df["high_risk_flag"] = (df["risk_level"] == "High Risk").astype(int)
+    df["risk_persistence"] = (
+        df.groupby("pincode")["high_risk_flag"]
+          .transform(lambda x: x.rolling(14, min_periods=1).sum())
+    )
     df["risk_trend"] = df.groupby("pincode")["final_risk_score"].diff(7).fillna(0.0)
+    df["simulated_ratio"] = (
+        df.groupby("pincode")["bio_demo_ratio"]
+          .transform(lambda x: np.random.permutation(x.values) if len(x) > 1 else x.values)
+    )
+    df["simulation_deviation"] = np.abs(df["bio_demo_ratio"] - df["simulated_ratio"])
+
     df.to_csv(scores_path, index=False)
     
     summary = {
