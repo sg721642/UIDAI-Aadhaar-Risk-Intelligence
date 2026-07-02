@@ -77,6 +77,23 @@ def health():
         "total_cached_records": len(_df_cache) if db_loaded else 0
     }
 
+@app.get("/health")
+def root_health():
+    """Root health check for Render/orchestration systems."""
+    return health()
+
+@app.get("/api/data")
+def get_full_data():
+    """Returns the full cached dataset as a list of records for the dashboard."""
+    if _df_cache is None:
+        raise HTTPException(
+            status_code=404, 
+            detail="Risk data not loaded. Run model pipeline first."
+        )
+    records_df = _df_cache.copy()
+    records_df["date"] = records_df["date"].dt.strftime("%Y-%m-%d")
+    return records_df.to_dict(orient="records")
+
 @app.get("/api/summary")
 def get_summary():
     """Returns summarized system-wide risk metrics."""

@@ -108,9 +108,30 @@ st.markdown(
     unsafe_html=True
 )
 
+import requests
+
 @st.cache_data
 def load_data(file_path):
-    """Cached data loader."""
+    """Cached data loader with local fallback and API support."""
+    api_url = os.getenv("API_URL")
+    if api_url:
+        api_url = api_url.rstrip("/")
+        try:
+            logger.info(f"Attempting to fetch dataset from remote API: {api_url}/api/data")
+            response = requests.get(f"{api_url}/api/data", timeout=15)
+            if response.status_code == 200:
+                data = response.json()
+                df = pd.DataFrame(data)
+                df["date"] = pd.to_datetime(df["date"])
+                df["pincode"] = df["pincode"].astype(int)
+                logger.info(f"Loaded {len(df)} records from API.")
+                return df
+            else:
+                logger.warning(f"API returned status code {response.status_code}. Falling back to local file.")
+        except Exception as e:
+            logger.error(f"Failed to fetch data from API: {e}. Falling back to local file.")
+            
+    # Fallback to local file
     if not os.path.exists(file_path):
         return None
     df = pd.read_csv(file_path)
@@ -124,10 +145,12 @@ scores_path = config.get_absolute_path("risk_scores_csv")
 df_raw = load_data(scores_path)
 
 if df_raw is None:
-    st.error("⚠️ Data files not detected! Please trigger the machine learning pipeline first.")
+    st.error("⚠️ Data files or API backend not detected!")
     st.markdown(
         """
-        To generate processed scores, run the pipeline command:
+        To run the dashboard in production, set the `API_URL` environment variable pointing to the FastAPI backend.
+        
+        To generate processed scores locally, run the pipeline command:
         ```bash
         python run_pipeline.py --train
         ```

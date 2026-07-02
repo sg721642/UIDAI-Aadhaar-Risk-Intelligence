@@ -123,12 +123,29 @@ $$FinalRiskScore = 0.3 \times IF + 0.3 \times AE + 0.2 \times LSTM + 0.2 \times 
 | **High Risk** | $\geq 0.70$ | Structural discrepancy; flagged for audit inspection. |
 | **Early Warning** | flag = 1 | 7-day risk score trend increases by $>0.15$ while currently under the High Risk limit. |
 
+## 🚀 Production Deployment
+
+For production deployments, the backend and frontend are decoupled to scale independently:
+
+1. **Backend REST API (Render / Cloud Docker)**:
+   * Deployed via **Docker** runtime.
+   * Container exposes **FastAPI** on port `8000`.
+   * **Health Check Endpoint**: `https://<your-api-url>/health`
+   * **API URL Example**: `https://uidai-risk-api.onrender.com`
+
+2. **Interactive Dashboard (Streamlit Community Cloud)**:
+   * Deployed via GitHub connection directly pointing to `app.py`.
+   * **Environment Variable**: Set `API_URL` to point to your backend Render URL.
+   * **Dashboard URL Example**: `https://uidai-risk-dashboard.streamlit.app`
+
+For detailed production instructions, configuration environment variables, and Docker Compose orchestration, see the [Deployment Guide](docs/Deployment.md).
+
 ---
 
 ## 🧪 Testing Suite
 Ensure all components are validated by running:
 ```bash
-pytest tests/ --cov=src
+python -m pytest tests/ --tb=short
 ```
 
 ---

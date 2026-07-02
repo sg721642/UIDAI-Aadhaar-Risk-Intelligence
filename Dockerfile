@@ -1,4 +1,4 @@
-# Production-grade multi-stage Dockerfile
+# Production-grade multi-stage Dockerfile for FastAPI Backend
 FROM python:3.10-slim AS builder
 
 WORKDIR /app
@@ -21,8 +21,8 @@ COPY . .
 ENV PATH=/root/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1
 
+# Expose FastAPI backend port
 EXPOSE 8000
-EXPOSE 8501
 
-# Run start services script by default
-CMD ["python", "start_services.py"]
+# Run uvicorn on the port provided by Render (defaulting to 8000)
+CMD ["sh", "-c", "uvicorn src.api.app:app --host 0.0.0.0 --port ${PORT:-8000}"]
