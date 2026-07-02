@@ -1,5 +1,7 @@
 # Development & Testing Dependencies
+-r requirements-backend.txt
 -r requirements.txt
+
 
 # Testing Frameworks
 pytest>=7.3.0
