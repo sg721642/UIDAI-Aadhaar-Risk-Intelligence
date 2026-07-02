@@ -30,6 +30,114 @@ _df_cache = None
 _summary_cache = None
 _cache_lock = threading.Lock()
 
+def generate_mock_data(scores_path, summary_path):
+    """Generates a synthetic/mock Aadhaar risk dataset when real pipeline files are absent."""
+    logger.info("Pipeline files missing. Generating synthetic/mock data for deployment bootstrap...")
+    
+    import numpy as np
+    from datetime import datetime, timedelta
+    
+    os.makedirs(os.path.dirname(scores_path), exist_ok=True)
+    os.makedirs(os.path.dirname(summary_path), exist_ok=True)
+    
+    np.random.seed(42)
+    n_records = 1000
+    
+    states = ["Delhi", "Maharashtra", "Karnataka", "Tamil Nadu", "Uttar Pradesh", "West Bengal"]
+    pincodes = [110001, 400001, 560001, 600001, 226001, 700001]
+    
+    dates = [datetime(2026, 6, 1) + timedelta(days=int(i)) for i in np.random.randint(0, 30, n_records)]
+    selected_states = np.random.choice(states, n_records)
+    selected_pincodes = [pincodes[states.index(s)] for s in selected_states]
+    
+    bio_demo_ratio = np.random.normal(0.4, 0.15, n_records)
+    bio_demo_ratio = np.clip(bio_demo_ratio, 0.0, 1.5)
+    
+    anomaly_indices = np.random.choice(n_records, int(n_records * 0.05), replace=False)
+    bio_demo_ratio[anomaly_indices] += np.random.uniform(0.5, 1.0, len(anomaly_indices))
+    
+    rolling_mean = bio_demo_ratio * 0.9
+    rolling_std = np.random.uniform(0.01, 0.1, n_records)
+    age_transition_skew = np.random.normal(0.0, 0.2, n_records)
+    age_transition_skew[anomaly_indices] += np.random.uniform(0.3, 0.8, len(anomaly_indices))
+    
+    iso_score = np.random.uniform(0.0, 0.4, n_records)
+    iso_score[anomaly_indices] = np.random.uniform(0.6, 0.9, len(anomaly_indices))
+    
+    autoencoder_score = np.random.uniform(0.0, 0.4, n_records)
+    autoencoder_score[anomaly_indices] = np.random.uniform(0.6, 0.9, len(anomaly_indices))
+    
+    lstm_score = np.random.uniform(0.0, 0.3, n_records)
+    lstm_score[anomaly_indices] = np.random.uniform(0.5, 0.8, len(anomaly_indices))
+    
+    spatial_score = np.random.uniform(0.0, 0.3, n_records)
+    spatial_score[anomaly_indices] = np.random.uniform(0.5, 0.8, len(anomaly_indices))
+    
+    final_risk_score = 0.3 * iso_score + 0.3 * autoencoder_score + 0.2 * lstm_score + 0.2 * spatial_score
+    
+    risk_level = []
+    early_warning = []
+    explanations = []
+    
+    for score in final_risk_score:
+        if score >= 0.7:
+            risk_level.append("High Risk")
+            early_warning.append(np.random.choice([0, 1], p=[0.7, 0.3]))
+            explanations.append("Elevated biometric-to-demographic update ratio and significant age transition skew.")
+        elif score >= 0.4:
+            risk_level.append("Monitor")
+            early_warning.append(0)
+            explanations.append("Moderate variation in updates; normal baseline.")
+        else:
+            risk_level.append("Normal")
+            early_warning.append(0)
+            explanations.append("Standard lifecycle biometric activity.")
+            
+    df = pd.DataFrame({
+        "date": dates,
+        "state": selected_states,
+        "district": [s + " District" for s in selected_states],
+        "pincode": selected_pincodes,
+        "demo_age_5_17": np.random.randint(10, 50, n_records),
+        "demo_age_17_": np.random.randint(50, 200, n_records),
+        "bio_age_5_17": np.random.randint(10, 50, n_records),
+        "bio_age_17_": np.random.randint(50, 200, n_records),
+        "bio_demo_ratio": bio_demo_ratio,
+        "rolling_mean": rolling_mean,
+        "rolling_std": rolling_std,
+        "age_transition_skew": age_transition_skew,
+        "iso_score": iso_score,
+        "autoencoder_score": autoencoder_score,
+        "lstm_score": lstm_score,
+        "spatial_score": spatial_score,
+        "final_risk_score": final_risk_score,
+        "risk_level": risk_level,
+        "early_warning": early_warning,
+        "explanation": explanations
+    })
+    
+    df = df.sort_values("date").reset_index(drop=True)
+    df.to_csv(scores_path, index=False)
+    
+    summary = {
+        "total_records": int(len(df)),
+        "total_alerts": int(len(df[df["risk_level"] == "High Risk"])),
+        "risk_distribution": {
+            "Normal": int(len(df[df["risk_level"] == "Normal"])),
+            "Monitor": int(len(df[df["risk_level"] == "Monitor"])),
+            "High Risk": int(len(df[df["risk_level"] == "High Risk"]))
+        },
+        "early_warning_alerts": int(len(df[df["early_warning"] == 1])),
+        "states_monitored": int(df["state"].nunique()),
+        "pincodes_monitored": int(df["pincode"].nunique()),
+        "average_risk_score": float(df["final_risk_score"].mean())
+    }
+    
+    with open(summary_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=4)
+        
+    logger.info("Synthetic bootstrap data generated successfully.")
+
 def load_cache():
     """Loads prediction outputs into memory cache."""
     global _df_cache, _summary_cache
@@ -38,6 +146,9 @@ def load_cache():
     summary_path = config.get_absolute_path("summary_json")
     
     with _cache_lock:
+        if not os.path.exists(scores_path) or not os.path.exists(summary_path):
+            generate_mock_data(scores_path, summary_path)
+            
         if os.path.exists(scores_path):
             logger.info(f"Loading risk scores cache from {scores_path}...")
             df = pd.read_csv(scores_path)
