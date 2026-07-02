@@ -93,6 +93,17 @@ def generate_mock_data(scores_path, summary_path):
             early_warning.append(0)
             explanations.append("Standard lifecycle biometric activity.")
             
+    semantic_contexts = []
+    for d in dates:
+        if d.month in [4, 5, 6]:
+            semantic_contexts.append("School admission period")
+        elif d.month in [1, 2, 3]:
+            semantic_contexts.append("Biometric refresh cycle")
+        elif d.month in [7, 8]:
+            semantic_contexts.append("Monsoon / low mobility period")
+        else:
+            semantic_contexts.append("Normal operational period")
+
     df = pd.DataFrame({
         "date": dates,
         "state": selected_states,
@@ -113,10 +124,12 @@ def generate_mock_data(scores_path, summary_path):
         "final_risk_score": final_risk_score,
         "risk_level": risk_level,
         "early_warning": early_warning,
-        "explanation": explanations
+        "explanation": explanations,
+        "semantic_context": semantic_contexts
     })
     
     df = df.sort_values("date").reset_index(drop=True)
+    df["risk_trend"] = df.groupby("pincode")["final_risk_score"].diff(7).fillna(0.0)
     df.to_csv(scores_path, index=False)
     
     summary = {
