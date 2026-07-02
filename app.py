@@ -113,7 +113,12 @@ import requests
 @st.cache_data
 def load_data(file_path):
     """Cached data loader with local fallback and API support."""
-    api_url = os.getenv("API_URL")
+    # Support both Streamlit Cloud secrets and environment variables
+    api_url = None
+    try:
+        api_url = st.secrets.get("API_URL") or os.getenv("API_URL")
+    except Exception:
+        api_url = os.getenv("API_URL")
     if api_url:
         api_url = api_url.rstrip("/")
         try:

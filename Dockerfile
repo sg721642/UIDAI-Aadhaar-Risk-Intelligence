@@ -7,8 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+COPY requirements-backend.txt .
+RUN pip install --no-cache-dir --user -r requirements-backend.txt
 
 # Final stage
 FROM python:3.10-slim AS runner
