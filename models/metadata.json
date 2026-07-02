@@ -1,0 +1,21 @@
+{
+    "dataset_size_records": 5000,
+    "lstm_dataset_sequences": 3797,
+    "features_used": [
+        "bio_demo_ratio",
+        "rolling_mean",
+        "rolling_std",
+        "age_transition_skew"
+    ],
+    "weights": {
+        "isolation_forest": 0.3,
+        "autoencoder": 0.3,
+        "lstm": 0.2,
+        "spatial": 0.2
+    },
+    "thresholds": {
+        "normal_max": 0.4,
+        "monitor_max": 0.7
+    },
+    "tensorflow_version": "2.21.0"
+}
