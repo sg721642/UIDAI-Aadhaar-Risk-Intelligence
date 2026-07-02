@@ -1,0 +1,94 @@
+# UIDAI Anomaly & Risk Intelligence System Configuration
+
+system:
+  project_name: "UIDAI Aadhaar Anomaly & Risk Intelligence"
+  version: "1.0.0"
+
+paths:
+  # Raw data directories relative to workspace root
+  demographic_raw_dir: "DATASET_USED-20260702T045137Z-3-001/DATASET_USED/api_data_aadhar_demographic"
+  enrolment_raw_dir: "DATASET_USED-20260702T045137Z-3-001/DATASET_USED/api_data_aadhar_enrolment"
+  
+  # Processed data output
+  processed_dir: "data/processed"
+  risk_scores_csv: "data/processed/risk_scores_enriched.csv"
+  actionable_regions_csv: "data/processed/actionable_regions.csv"
+  summary_json: "data/processed/summary.json"
+  
+  # Models directory
+  models_dir: "models"
+  scaler_joblib: "models/scaler.joblib"
+  isolation_forest_joblib: "models/isolation_forest.joblib"
+  autoencoder_keras: "models/autoencoder.keras"
+  lstm_keras: "models/lstm.keras"
+  
+  # Plots & Logs
+  plots_dir: "plots"
+  heatmap_png: "plots/risk_heatmap.png"
+  logs_dir: "logs"
+
+data_mapping:
+  # Enrolment columns mapping to represent biometric data
+  enrolment_to_biometric:
+    age_5_17: "bio_age_5_17"
+    age_18_greater: "bio_age_17_"
+  
+  # Columns to drop during cleaning
+  drop_cols: []
+
+feature_engineering:
+  rolling_window: 7
+  min_periods: 1
+
+models:
+  # Isolation Forest params
+  isolation_forest:
+    n_estimators: 200
+    contamination: 0.05
+    random_state: 42
+    
+  # Dense Autoencoder params
+  autoencoder:
+    epochs: 20
+    batch_size: 256
+    learning_rate: 0.001
+    dense_units: [8]
+    activation: "relu"
+    output_activation: "linear"
+    
+  # LSTM temporal prediction params
+  lstm:
+    sequence_length: 14
+    max_sequences: 5000       # Memory safety cap (from prototype)
+    epochs: 2
+    batch_size: 128
+    units: 8
+    
+  # Spatial Nearest Neighbors
+  spatial:
+    n_neighbors: 5
+
+risk_scoring:
+  # Final risk score component weights (must sum to 1.0)
+  weights:
+    isolation_forest: 0.3
+    autoencoder: 0.3
+    lstm: 0.2
+    spatial: 0.2
+    
+  # Alert thresholds
+  thresholds:
+    normal_max: 0.4
+    monitor_max: 0.7
+    # Anything above or equal to monitor_max is High Risk
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  debug: false
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  rotation_max_bytes: 10485760  # 10MB
+  backup_count: 5

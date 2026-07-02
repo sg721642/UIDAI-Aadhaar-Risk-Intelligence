@@ -1,0 +1,176 @@
+import os
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import IsolationForest
+import tensorflow as tf
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.layers import Dense, LSTM, Input
+from src.config import Config
+from src.utils.logger import get_logger
+
+logger = get_logger("model_training", log_file="pipeline.log")
+
+class ModelTrainer:
+    def __init__(self, config: Config):
+        self.config = config
+        self.models_dir = config.get_absolute_path("models_dir")
+        os.makedirs(self.models_dir, exist_ok=True)
+        
+        # Paths to save
+        self.scaler_path = config.get_absolute_path("scaler_joblib")
+        self.iforest_path = config.get_absolute_path("isolation_forest_joblib")
+        self.autoencoder_path = config.get_absolute_path("autoencoder_keras")
+        self.lstm_path = config.get_absolute_path("lstm_keras")
+        
+        # Config params
+        self.feature_cols = [
+            "bio_demo_ratio",
+            "rolling_mean",
+            "rolling_std",
+            "age_transition_skew"
+        ]
+
+    def prepare_data(self, df: pd.DataFrame):
+        """Standardizes engineered features."""
+        logger.info("Scaling features for Isolation Forest and Autoencoder...")
+        X = df[self.feature_cols].fillna(0)
+        
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+        
+        # Save scaler
+        joblib.dump(scaler, self.scaler_path)
+        logger.info(f"Saved StandardScaler to: {self.scaler_path}")
+        
+        return X_scaled, scaler
+
+    def train_isolation_forest(self, X_scaled):
+        """Trains Isolation Forest anomaly detector."""
+        params = self.config.get("models.isolation_forest")
+        logger.info(f"Training Isolation Forest model with params: {params}...")
+        
+        iso_model = IsolationForest(
+            n_estimators=params.get("n_estimators", 200),
+            contamination=params.get("contamination", 0.05),
+            random_state=params.get("random_state", 42),
+            n_jobs=-1
+        )
+        
+        iso_model.fit(X_scaled)
+        
+        # Save model
+        joblib.dump(iso_model, self.iforest_path)
+        logger.info(f"Saved Isolation Forest to: {self.iforest_path}")
+        return iso_model
+
+    def train_autoencoder(self, X_scaled):
+        """Trains reconstruction autoencoder network."""
+        params = self.config.get("models.autoencoder")
+        logger.info(f"Training Autoencoder network with params: {params}...")
+        
+        input_dim = X_scaled.shape[1]
+        input_layer = Input(shape=(input_dim,))
+        
+        # Encode
+        encoded = input_layer
+        for units in params.get("dense_units", [8]):
+            encoded = Dense(units, activation=params.get("activation", "relu"))(encoded)
+            
+        # Decode
+        decoded = Dense(input_dim, activation=params.get("output_activation", "linear"))(encoded)
+        
+        autoencoder = Model(input_layer, decoded)
+        autoencoder.compile(
+            optimizer=params.get("optimizer", "adam"),
+            loss="mse"
+        )
+        
+        autoencoder.fit(
+            X_scaled,
+            X_scaled,
+            epochs=params.get("epochs", 20),
+            batch_size=params.get("batch_size", 256),
+            verbose=0
+        )
+        
+        # Save model
+        autoencoder.save(self.autoencoder_path)
+        logger.info(f"Saved Autoencoder model to: {self.autoencoder_path}")
+        return autoencoder
+
+    def train_lstm(self, df: pd.DataFrame):
+        """Trains sequential LSTM trend predictor."""
+        params = self.config.get("models.lstm")
+        seq_len = params.get("sequence_length", 14)
+        max_seqs = params.get("max_sequences", 5000)
+        
+        logger.info(f"Preparing sequential dataset for LSTM (seq_len={seq_len}, max_seqs={max_seqs})...")
+        X_seq = []
+        y_seq = []
+        
+        # Group by pincode and sort to create sequences
+        # Iterate over groups and extract windows
+        for pincode, group in df.groupby("pincode"):
+            series = group["bio_demo_ratio"].values.astype("float32")
+            if len(series) <= seq_len:
+                continue
+                
+            for i in range(len(series) - seq_len):
+                X_seq.append(series[i:i + seq_len])
+                y_seq.append(series[i + seq_len])
+                
+                if len(X_seq) >= max_seqs:
+                    break
+            if len(X_seq) >= max_seqs:
+                break
+                
+        if not X_seq:
+            logger.warning("No sequences could be constructed. Skipping LSTM training.")
+            return None
+            
+        X_seq = np.array(X_seq).reshape(-1, seq_len, 1)
+        y_seq = np.array(y_seq).reshape(-1, 1)
+        
+        logger.info(f"LSTM training dataset size: {X_seq.shape}")
+        
+        # Build network
+        lstm_model = Sequential([
+            Input(shape=(seq_len, 1)),
+            LSTM(params.get("units", 8)),
+            Dense(1)
+        ])
+        
+        lstm_model.compile(optimizer="adam", loss="mse")
+        
+        lstm_model.fit(
+            X_seq,
+            y_seq,
+            epochs=params.get("epochs", 2),
+            batch_size=params.get("batch_size", 128),
+            verbose=0
+        )
+        
+        # Save model
+        lstm_model.save(self.lstm_path)
+        logger.info(f"Saved LSTM model to: {self.lstm_path}")
+        return lstm_model
+
+    def train_all(self, df: pd.DataFrame):
+        """Orchestrates the entire training cycle."""
+        logger.info("Executing training cycle for all model components...")
+        
+        # Scaling
+        X_scaled, _ = self.prepare_data(df)
+        
+        # Component 1: Isolation Forest
+        self.train_isolation_forest(X_scaled)
+        
+        # Component 2: Autoencoder
+        self.train_autoencoder(X_scaled)
+        
+        # Component 3: LSTM
+        self.train_lstm(df)
+        
+        logger.info("All model components trained and checkpointed successfully.")
