@@ -168,10 +168,8 @@ def load_cache():
             logger.warning(f"Summary JSON not found at: {summary_path}")
             _summary_cache = None
 
-# Load cache on startup
-@app.on_event("startup")
-async def startup_event():
-    load_cache()
+# Load cache on module import
+load_cache()
 
 @app.get("/api/health")
 def health():
